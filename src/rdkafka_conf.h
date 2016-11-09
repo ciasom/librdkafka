@@ -75,6 +75,7 @@ struct rd_kafka_conf_s {
 	int     socket_sndbuf_size;
 	int     socket_rcvbuf_size;
         int     socket_keepalive;
+	int     socket_nagle_disable;
         int     socket_max_fails;
 	char   *client_id_str;
         rd_kafkap_str_t *client_id;
@@ -222,6 +223,16 @@ struct rd_kafka_conf_s {
 
         /* Socket creation callback */
         int (*socket_cb) (int domain, int type, int protocol, void *opaque);
+
+        /* Connect callback */
+        int (*connect_cb) (int sockfd,
+                           const struct sockaddr *addr,
+                           int addrlen,
+                           const char *id,
+                           void *opaque);
+
+        /* Close socket callback */
+        int (*closesocket_cb) (int sockfd, void *opaque);
 
 		/* File open callback */
         int (*open_cb) (const char *pathname, int flags, mode_t mode,

@@ -380,7 +380,11 @@ uint64_t rd_kafka_q_size (rd_kafka_q_t *rkq) {
 #endif
 
 /* Construct temporary on-stack replyq for indicating no replyq. */
-#define RD_KAFKA_NO_REPLYQ  (rd_kafka_replyq_t){NULL, 0}
+#if ENABLE_DEVEL
+#define RD_KAFKA_NO_REPLYQ (rd_kafka_replyq_t){NULL, 0, rd_strdup(__FUNCTION__)}
+#else
+#define RD_KAFKA_NO_REPLYQ (rd_kafka_replyq_t){NULL, 0}
+#endif
 
 /**
  * Set up replyq.
@@ -513,6 +517,11 @@ rd_kafka_message_t *rd_kafka_message_get_from_rkm (rd_kafka_op_t *rko,
 rd_kafka_message_t *rd_kafka_message_new (void);
 
 rd_kafka_resp_err_t rd_kafka_q_wait_result (rd_kafka_q_t *rkq, int timeout_ms);
+
+int rd_kafka_q_apply (rd_kafka_q_t *rkq,
+                      int (*callback) (rd_kafka_q_t *rkq, rd_kafka_op_t *rko,
+                                       void *opaque),
+                      void *opaque);
 
 void rd_kafka_q_fix_offsets (rd_kafka_q_t *rkq, int64_t min_offset,
 			     int64_t base_offset);

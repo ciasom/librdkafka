@@ -328,6 +328,7 @@ rd_kafka_toppar_get_avail (const rd_kafka_itopic_t *rkt,
 
 shptr_rd_kafka_toppar_t *rd_kafka_toppar_desired_get (rd_kafka_itopic_t *rkt,
                                                       int32_t partition);
+void rd_kafka_toppar_desired_add0 (rd_kafka_toppar_t *rktp);
 shptr_rd_kafka_toppar_t *rd_kafka_toppar_desired_add (rd_kafka_itopic_t *rkt,
                                                       int32_t partition);
 void rd_kafka_toppar_desired_link (rd_kafka_toppar_t *rktp);
@@ -455,6 +456,12 @@ rd_kafka_topic_partition_list_log (rd_kafka_t *rk, const char *fac,
 void
 rd_kafka_topic_partition_list_update (rd_kafka_topic_partition_list_t *dst,
                                       const rd_kafka_topic_partition_list_t *src);
+int
+
+rd_kafka_topic_partition_list_sum (
+        const rd_kafka_topic_partition_list_t *rktparlist,
+        int (*cb) (const rd_kafka_topic_partition_t *rktpar, void *opaque),
+        void *opaque);
 
 /**
  * @brief Toppar + Op version tuple used for mapping Fetched partitions

@@ -24,6 +24,7 @@ socket.blocking.max.ms                   |  *  | 1 .. 60000      |           100
 socket.send.buffer.bytes                 |  *  | 0 .. 100000000  |             0 | Broker socket send buffer size. System default is used if 0. <br>*Type: integer*
 socket.receive.buffer.bytes              |  *  | 0 .. 100000000  |             0 | Broker socket receive buffer size. System default is used if 0. <br>*Type: integer*
 socket.keepalive.enable                  |  *  | true, false     |         false | Enable TCP keep-alives (SO_KEEPALIVE) on broker sockets <br>*Type: boolean*
+socket.nagle.disable                     |  *  | true, false     |         false | Disable the Nagle algorithm (TCP_NODELAY). <br>*Type: boolean*
 socket.max.fails                         |  *  | 0 .. 1000000    |             3 | Disconnect from broker when this number of send failures (e.g., timed out requests) is reached. Disable with 0. NOTE: The connection is automatically re-established. <br>*Type: integer*
 broker.address.ttl                       |  *  | 0 .. 86400000   |          1000 | How long to cache the broker address resolving results (milliseconds). <br>*Type: integer*
 broker.address.family                    |  *  | any, v4, v6     |           any | Allowed broker IP address families: any, v4, v6 <br>*Type: enum value*
@@ -38,6 +39,8 @@ log_level                                |  *  | 0 .. 7          |             6
 log.thread.name                          |  *  | true, false     |         false | Print internal thread name in log messages (useful for debugging librdkafka internals) <br>*Type: boolean*
 log.connection.close                     |  *  | true, false     |          true | Log broker disconnects. It might be useful to turn this off when interacting with 0.9 brokers with an aggressive `connection.max.idle.ms` value. <br>*Type: boolean*
 socket_cb                                |  *  |                 |               | Socket creation callback to provide race-free CLOEXEC <br>*Type: pointer*
+connect_cb                               |  *  |                 |               | Socket connect callback <br>*Type: pointer*
+closesocket_cb                           |  *  |                 |               | Socket close callback <br>*Type: pointer*
 open_cb                                  |  *  |                 |               | File open callback to provide race-free CLOEXEC <br>*Type: pointer*
 opaque                                   |  *  |                 |               | Application opaque (set with rd_kafka_conf_set_opaque()) <br>*Type: pointer*
 default_topic_conf                       |  *  |                 |               | Default topic configuration for automatically subscribed topics <br>*Type: pointer*

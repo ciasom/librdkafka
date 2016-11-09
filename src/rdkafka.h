@@ -56,6 +56,10 @@ extern "C" {
 
 #ifdef _MSC_VER
 #include <basetsd.h>
+#ifndef WIN32_MEAN_AND_LEAN
+#define WIN32_MEAN_AND_LEAN
+#endif
+#include <Winsock2.h>  /* for sockaddr, .. */
 typedef SSIZE_T ssize_t;
 #define RD_UNUSED
 #define RD_INLINE __inline
@@ -68,6 +72,8 @@ typedef SSIZE_T ssize_t;
 #endif
 
 #else
+#include <sys/socket.h> /* for sockaddr, .. */
+
 #define RD_UNUSED __attribute__((unused))
 #define RD_INLINE inline
 #define RD_EXPORT
@@ -1057,12 +1063,49 @@ void rd_kafka_conf_set_stats_cb(rd_kafka_conf_t *conf,
  * Default:
  *  - on linux: racefree CLOEXEC
  *  - others  : non-racefree CLOEXEC
+ *
+ * @remark The callback will be called from an internal librdkafka thread.
  */
 RD_EXPORT
 void rd_kafka_conf_set_socket_cb(rd_kafka_conf_t *conf,
                                   int (*socket_cb) (int domain, int type,
                                                     int protocol,
                                                     void *opaque));
+
+
+
+/**
+ * @brief Set connect callback.
+ *
+ * The connect callback is responsible for connecting socket \p sockfd
+ * to peer address \p addr.
+ * The \p id field contains the broker identifier.
+ *
+ * \p connect_cb shall return 0 on success (socket connected) or an error
+ * number (errno) on error.
+ *
+ * @remark The callback will be called from an internal librdkafka thread.
+ */
+RD_EXPORT void
+rd_kafka_conf_set_connect_cb (rd_kafka_conf_t *conf,
+                              int (*connect_cb) (int sockfd,
+                                                 const struct sockaddr *addr,
+                                                 int addrlen,
+                                                 const char *id,
+                                                 void *opaque));
+
+/**
+ * @brief Set close socket callback.
+ *
+ * Close a socket (optionally opened with socket_cb()).
+ *
+ * @remark The callback will be called from an internal librdkafka thread.
+ */
+RD_EXPORT void
+rd_kafka_conf_set_closesocket_cb (rd_kafka_conf_t *conf,
+                                  int (*closesocket_cb) (int sockfd,
+                                                         void *opaque));
+
 
 
 #ifndef _MSC_VER
@@ -1077,6 +1120,8 @@ void rd_kafka_conf_set_socket_cb(rd_kafka_conf_t *conf,
  * Default:
  *  - on linux: racefree CLOEXEC
  *  - others  : non-racefree CLOEXEC
+ *
+ * @remark The callback will be called from an internal librdkafka thread.
  */
 RD_EXPORT
 void rd_kafka_conf_set_open_cb (rd_kafka_conf_t *conf,

@@ -1044,12 +1044,12 @@ static int rd_kafka_thread_main (void *arg) {
 	rd_kafka_timer_start(&rk->rk_timers, &tmr_topic_scan, 1000000,
 			     rd_kafka_topic_scan_tmr_cb, NULL);
 	rd_kafka_timer_start(&rk->rk_timers, &tmr_stats_emit,
-			     rk->rk_conf.stats_interval_ms * 1000,
+			     rk->rk_conf.stats_interval_ms * 1000ll,
 			     rd_kafka_stats_emit_tmr_cb, NULL);
         if (rk->rk_conf.metadata_refresh_interval_ms >= 0)
                 rd_kafka_timer_start(&rk->rk_timers, &tmr_metadata_refresh,
                                      rk->rk_conf.metadata_refresh_interval_ms *
-                                     1000,
+                                     1000ll,
                                      rd_kafka_metadata_refresh_cb, NULL);
 
 	if (rk->rk_cgrp)
@@ -1110,14 +1110,14 @@ rd_kafka_t *rd_kafka_new (rd_kafka_type_t type, rd_kafka_conf_t *conf,
         use_conf = (conf ? rd_kafka_conf_dup(conf) : rd_kafka_conf_new());
 
         /* Verify mandatory configuration */
-        if (!conf->socket_cb) {
+        if (!use_conf->socket_cb) {
                 rd_snprintf(errstr, errstr_size,
                          "Mandatory config property 'socket_cb' not set");
                 rd_kafka_conf_destroy(use_conf);
                 return NULL;
         }
 
-        if (!conf->open_cb) {
+        if (!use_conf->open_cb) {
                 rd_snprintf(errstr, errstr_size,
                          "Mandatory config property 'open_cb' not set");
                 rd_kafka_conf_destroy(use_conf);
@@ -2636,7 +2636,9 @@ static void rd_kafka_DescribeGroups_resp_cb (rd_kafka_t *rk,
                 gi->protocol_type = RD_KAFKAP_STR_DUP(&ProtoType);
                 gi->protocol = RD_KAFKAP_STR_DUP(&Proto);
 
-                gi->members = rd_malloc(MemberCnt * sizeof(*gi->members));
+                if (MemberCnt > 0)
+                        gi->members =
+                                rd_malloc(MemberCnt * sizeof(*gi->members));
 
                 while (MemberCnt-- > 0) {
                         rd_kafkap_str_t MemberId, ClientId, ClientHost;
@@ -2656,7 +2658,7 @@ static void rd_kafka_DescribeGroups_resp_cb (rd_kafka_t *rk,
                         mi->client_id = RD_KAFKAP_STR_DUP(&ClientId);
                         mi->client_host = RD_KAFKAP_STR_DUP(&ClientHost);
 
-                        if (RD_KAFKAP_BYTES_IS_NULL(&Meta)) {
+                        if (RD_KAFKAP_BYTES_LEN(&Meta) == 0) {
                                 mi->member_metadata_size = 0;
                                 mi->member_metadata = NULL;
                         } else {
@@ -2667,7 +2669,7 @@ static void rd_kafka_DescribeGroups_resp_cb (rd_kafka_t *rk,
                                                   mi->member_metadata_size);
                         }
 
-                        if (RD_KAFKAP_BYTES_IS_NULL(&Assignment)) {
+                        if (RD_KAFKAP_BYTES_LEN(&Assignment) == 0) {
                                 mi->member_assignment_size = 0;
                                 mi->member_assignment = NULL;
                         } else {

@@ -192,7 +192,7 @@ shptr_rd_kafka_toppar_t *rd_kafka_toppar_new0 (rd_kafka_itopic_t *rkt,
                         intvl = 10 * 1000;
 		rd_kafka_timer_start(&rkt->rkt_rk->rk_timers,
 				     &rktp->rktp_consumer_lag_tmr,
-                                     intvl * 1000,
+                                     intvl * 1000ll,
 				     rd_kafka_toppar_consumer_lag_tmr_cb,
 				     rktp);
         }
@@ -486,6 +486,25 @@ void rd_kafka_toppar_desired_unlink (rd_kafka_toppar_t *rktp) {
 
 
 /**
+ * @brief If rktp is not already desired:
+ *  - mark as DESIRED|UNKNOWN
+ *  - add to desired list
+ *
+ * @remark toppar_lock() MUST be held
+ */
+void rd_kafka_toppar_desired_add0 (rd_kafka_toppar_t *rktp) {
+        if ((rktp->rktp_flags & RD_KAFKA_TOPPAR_F_DESIRED))
+                return;
+
+        rd_kafka_dbg(rktp->rktp_rkt->rkt_rk, TOPIC, "DESIRED",
+                     "%s [%"PRId32"]: adding to DESIRED list",
+                     rktp->rktp_rkt->rkt_topic->str, rktp->rktp_partition);
+	rktp->rktp_flags |= RD_KAFKA_TOPPAR_F_DESIRED;
+        rd_kafka_toppar_desired_link(rktp);
+}
+
+
+/**
  * Adds 'partition' as a desired partition to topic 'rkt', or updates
  * an existing partition to be desired.
  *
@@ -515,14 +534,14 @@ shptr_rd_kafka_toppar_t *rd_kafka_toppar_desired_add (rd_kafka_itopic_t *rkt,
 	s_rktp = rd_kafka_toppar_new(rkt, partition);
         rktp = rd_kafka_toppar_s2i(s_rktp);
 
-	rktp->rktp_flags |= RD_KAFKA_TOPPAR_F_DESIRED |
-                RD_KAFKA_TOPPAR_F_UNKNOWN;
+        rd_kafka_toppar_lock(rktp);
+        rktp->rktp_flags |= RD_KAFKA_TOPPAR_F_UNKNOWN;
+        rd_kafka_toppar_desired_add0(rktp);
+        rd_kafka_toppar_unlock(rktp);
 
 	rd_kafka_dbg(rkt->rkt_rk, TOPIC, "DESP",
 		     "Adding desired topic %s [%"PRId32"]",
 		     rkt->rkt_topic->str, rktp->rktp_partition);
-
-        rd_kafka_toppar_desired_link(rktp);
 
 	return s_rktp; /* Callers refcount */
 }
@@ -1118,7 +1137,7 @@ void rd_kafka_toppar_offset_request (rd_kafka_toppar_t *rktp,
                         rktp, RD_KAFKA_TOPPAR_FETCH_OFFSET_QUERY);
 		rd_kafka_timer_start(&rktp->rktp_rkt->rkt_rk->rk_timers,
 				     &rktp->rktp_offset_query_tmr,
-				     backoff_ms*1000,
+				     backoff_ms*1000ll,
 				     rd_kafka_offset_query_tmr_cb, rktp);
 		return;
         }
@@ -2612,3 +2631,23 @@ rd_kafka_topic_partition_list_update (rd_kafka_topic_partition_list_t *dst,
                 d->err    = s->err;
         }
 }
+
+
+/**
+ * @returns the sum of \p cb called for each element.
+ */
+int
+rd_kafka_topic_partition_list_sum (
+        const rd_kafka_topic_partition_list_t *rktparlist,
+        int (*cb) (const rd_kafka_topic_partition_t *rktpar, void *opaque),
+        void *opaque) {
+        int i, sum = 0;
+
+        for (i = 0 ; i < rktparlist->cnt ; i++) {
+		const rd_kafka_topic_partition_t *rktpar =
+			&rktparlist->elems[i];
+                sum += cb(rktpar, opaque);
+        }
+        return sum;
+}
+

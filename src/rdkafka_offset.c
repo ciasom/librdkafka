@@ -413,6 +413,7 @@ rd_kafka_commit (rd_kafka_t *rk,
         rd_kafka_cgrp_t *rkcg;
 	rd_kafka_resp_err_t err;
 	rd_kafka_q_t *repq = NULL;
+	rd_kafka_replyq_t rq = RD_KAFKA_NO_REPLYQ;
 
         if (!(rkcg = rd_kafka_cgrp_get(rk)))
                 return RD_KAFKA_RESP_ERR__UNKNOWN_GROUP;
@@ -420,15 +421,14 @@ rd_kafka_commit (rd_kafka_t *rk,
         if (!async)
                 repq = rd_kafka_q_new(rk);
 
-        err = rd_kafka_commit0(rk, offsets, NULL,
-			       !async ? RD_KAFKA_REPLYQ(repq, 0) :
-			       RD_KAFKA_NO_REPLYQ, NULL, NULL);
+        if (!async) 
+		rq = RD_KAFKA_REPLYQ(repq, 0);
+ 
+        err = rd_kafka_commit0(rk, offsets, NULL, rq, NULL, NULL);
 
-        if (!async) {
+        if (!err && !async) {
 		err = rd_kafka_q_wait_result(repq, RD_POLL_INFINITE);
-                rd_kafka_q_destroy(repq);
-        } else {
-                err = RD_KAFKA_RESP_ERR_NO_ERROR;
+		rd_kafka_q_destroy(repq);
         }
 
 	return err;
@@ -875,7 +875,7 @@ static void rd_kafka_offset_file_init (rd_kafka_toppar_t *rktp) {
 		rd_kafka_timer_start(&rktp->rktp_rkt->rkt_rk->rk_timers,
 				     &rktp->rktp_offset_sync_tmr,
 				     rktp->rktp_rkt->rkt_conf.
-				     offset_store_sync_interval_ms * 1000,
+				     offset_store_sync_interval_ms * 1000ll,
 				     rd_kafka_offset_sync_tmr_cb, rktp);
 
 	if (rd_kafka_offset_file_open(rktp) != -1) {
@@ -1062,7 +1062,7 @@ void rd_kafka_offset_store_init (rd_kafka_toppar_t *rktp) {
 		rd_kafka_timer_start(&rktp->rktp_rkt->rkt_rk->rk_timers,
 				     &rktp->rktp_offset_commit_tmr,
 				     rktp->rktp_rkt->rkt_conf.
-				     auto_commit_interval_ms * 1000,
+				     auto_commit_interval_ms * 1000ll,
 				     rd_kafka_offset_auto_commit_tmr_cb,
 				     rktp);
 

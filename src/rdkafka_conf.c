@@ -229,6 +229,10 @@ static const struct rd_kafka_property rd_kafka_properties[] = {
 	  _RK(socket_keepalive),
           "Enable TCP keep-alives (SO_KEEPALIVE) on broker sockets",
           0, 1, 0 },
+	{ _RK_GLOBAL, "socket.nagle.disable", _RK_C_BOOL,
+	  _RK(socket_nagle_disable),
+          "Disable the Nagle algorithm (TCP_NODELAY).",
+          0, 1, 0 },
         { _RK_GLOBAL, "socket.max.fails", _RK_C_INT,
           _RK(socket_max_fails),
           "Disconnect from broker when this number of send failures "
@@ -300,6 +304,14 @@ static const struct rd_kafka_property rd_kafka_properties[] = {
 #else
           rd_kafka_socket_cb_generic
 #endif
+        },
+        { _RK_GLOBAL, "connect_cb", _RK_C_PTR,
+          _RK(connect_cb),
+          "Socket connect callback",
+        },
+        { _RK_GLOBAL, "closesocket_cb", _RK_C_PTR,
+          _RK(closesocket_cb),
+          "Socket close callback",
         },
         { _RK_GLOBAL, "open_cb", _RK_C_PTR,
           _RK(open_cb),
@@ -1461,6 +1473,24 @@ void rd_kafka_conf_set_socket_cb (rd_kafka_conf_t *conf,
                                                     void *opaque)) {
         conf->socket_cb = socket_cb;
 }
+
+void
+rd_kafka_conf_set_connect_cb (rd_kafka_conf_t *conf,
+                              int (*connect_cb) (int sockfd,
+                                                 const struct sockaddr *addr,
+                                                 int addrlen,
+                                                 const char *id,
+                                                 void *opaque)) {
+        conf->connect_cb = connect_cb;
+}
+
+void
+rd_kafka_conf_set_closesocket_cb (rd_kafka_conf_t *conf,
+                                  int (*closesocket_cb) (int sockfd,
+                                                         void *opaque)) {
+        conf->closesocket_cb = closesocket_cb;
+}
+
 
 
 #ifndef _MSC_VER
